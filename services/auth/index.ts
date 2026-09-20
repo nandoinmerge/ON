@@ -8,9 +8,12 @@ import { z } from 'zod';
  * Toda chamada passa por aqui, que valida, registra em auditoria e delega ao Supabase.
  */
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// A service role key NUNCA deve ir para o bundle do navegador. Ela só existe
+// aqui quando este arquivo roda em um ambiente de servidor (ex: Netlify Functions),
+// nunca no build do frontend.
+const supabaseServiceKey = typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('SUPABASE_URL e SUPABASE_ANON_KEY são obrigatórios');
@@ -198,7 +201,7 @@ export async function recoverPassword(
     const { error } = await supabase.auth.resetPasswordForEmail(
       validated.email,
       {
-        redirectTo: `${process.env.AUTH_REDIRECT_URL || 'http://localhost:5173'}/auth/reset-password`,
+        redirectTo: `${import.meta.env.VITE_APP_URL || 'http://localhost:5173'}/auth/reset-password`,
       }
     );
 
