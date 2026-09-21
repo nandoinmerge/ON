@@ -159,14 +159,27 @@ function Sidebar({
         aria-hidden="true"
       />
 
-      <div className="relative flex items-center justify-between px-4 h-16 border-b border-white/10">
-        <div className="flex items-center gap-2 min-w-0">
-          <img
-            src="/logo-icon.png"
-            alt="ON Digital"
-            className="w-8 h-8 shrink-0"
-          />
-          {!collapsed && <span className="font-semibold truncate">ON Digital</span>}
+      <div
+        className={`relative flex items-center h-16 border-b border-white/10 ${
+          collapsed ? 'px-2 gap-1' : 'px-4 gap-2'
+        }`}
+      >
+        <div className={`flex items-center min-w-0 flex-1 ${collapsed ? 'justify-center' : ''}`}>
+          {collapsed ? (
+            <img
+              src="/logo-icon-white.png"
+              alt="ON Digital"
+              className="shrink-0 object-contain"
+              style={{ width: 28, height: 28 }}
+            />
+          ) : (
+            <img
+              src="/logo-lockup-white.png"
+              alt="ON Digital"
+              className="shrink-0 object-contain"
+              style={{ height: 28, width: 'auto' }}
+            />
+          )}
         </div>
         <button
           onClick={onCloseMobile}
