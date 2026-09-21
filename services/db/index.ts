@@ -178,3 +178,73 @@ export function handleDbError(error: any): string {
   if (error?.error) return error.error;
   return 'Erro desconhecido ao acessar o banco';
 }
+
+/**
+ * Clientes
+ */
+export async function getClients() {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name, industry, status, health, contact_name, contact_email, created_at')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Projetos (com nome do cliente já resolvido, para exibir no kanban)
+ */
+export async function getProjects() {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name, status, priority, due_date, created_at, client_id, clients(id, name)')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Tarefas (com nome do projeto já resolvido)
+ */
+export async function getTasks() {
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('id, title, status, due_date, created_at, project_id, projects(id, name)')
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Itens financeiros (com nome do cliente já resolvido)
+ */
+export async function getBillingItems() {
+  try {
+    const { data, error } = await supabase
+      .from('billing_items')
+      .select('id, description, amount, status, due_date, created_at, client_id, clients(id, name)')
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}

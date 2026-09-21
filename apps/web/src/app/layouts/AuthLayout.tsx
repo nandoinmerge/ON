@@ -15,6 +15,10 @@ import {
 import { getCurrentUser, logout } from '@services/auth/index.js';
 import { getCurrentUserProfile } from '@services/db/index.js';
 import DashboardPage from '../pages/DashboardPage';
+import ClientesPage from '../pages/ClientesPage';
+import ProjetosPage from '../pages/ProjetosPage';
+import TarefasPage from '../pages/TarefasPage';
+import FinanceiroPage from '../pages/FinanceiroPage';
 
 const NAV_ITEMS = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -101,22 +105,30 @@ export default function AuthLayout() {
           >
             <Menu size={20} />
           </button>
-          <h1 className="text-h2 text-text-primary">Dashboard</h1>
+          <PageTitle />
         </header>
 
         {/* Routes */}
         <div className="flex-1 overflow-auto p-4 sm:p-6">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/clientes" element={<PlaceholderPage title="Clientes" />} />
-            <Route path="/projetos" element={<PlaceholderPage title="Projetos" />} />
-            <Route path="/tarefas" element={<PlaceholderPage title="Tarefas" />} />
-            <Route path="/financeiro" element={<PlaceholderPage title="Financeiro" />} />
+            <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/projetos" element={<ProjetosPage />} />
+            <Route path="/tarefas" element={<TarefasPage />} />
+            <Route path="/financeiro" element={<FinanceiroPage />} />
           </Routes>
         </div>
       </main>
     </div>
   );
+}
+
+function PageTitle() {
+  const location = useLocation();
+  const found = NAV_ITEMS.find((item) =>
+    item.end ? location.pathname === item.href : location.pathname.startsWith(item.href)
+  );
+  return <h1 className="text-h2 text-text-primary">{found?.label ?? 'Dashboard'}</h1>;
 }
 
 function Sidebar({
@@ -141,6 +153,7 @@ function Sidebar({
   return (
     <aside
       className={`
+        group
         fixed lg:static inset-y-0 left-0 z-40
         ${collapsed ? 'lg:w-20' : 'lg:w-64'} w-64
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -159,41 +172,44 @@ function Sidebar({
         aria-hidden="true"
       />
 
-      <div
-        className={`relative flex items-center h-16 border-b border-white/10 ${
-          collapsed ? 'px-2 gap-1' : 'px-4 gap-2'
-        }`}
-      >
-        <div className={`flex items-center min-w-0 flex-1 ${collapsed ? 'justify-center' : ''}`}>
-          {collapsed ? (
-            <img
-              src="/logo-icon-white.png"
-              alt="ON Digital"
-              className="shrink-0 object-contain"
-              style={{ width: 28, height: 28 }}
-            />
-          ) : (
-            <img
-              src="/logo-lockup-white.png"
-              alt="ON Digital"
-              className="shrink-0 object-contain"
-              style={{ height: 28, width: 'auto' }}
-            />
-          )}
-        </div>
+      <div className="relative flex items-center justify-center h-16 border-b border-white/10 px-4">
+        {collapsed ? (
+          <img
+            src="/logo-icon-white.png"
+            alt="ON Digital"
+            className="shrink-0 object-contain"
+            style={{ width: 36, height: 36 }}
+          />
+        ) : (
+          <img
+            src="/logo-lockup-white.png"
+            alt="ON Digital"
+            className="shrink-0 object-contain"
+            style={{ height: 34, width: 'auto' }}
+          />
+        )}
+
+        {/* Fechar (mobile): sempre visível, não depende de hover (touch não tem hover) */}
         <button
           onClick={onCloseMobile}
-          className="lg:hidden p-1 rounded hover:bg-white/10 text-zinc-400"
+          className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-white/10 text-zinc-400"
           aria-label="Fechar menu"
         >
           <X size={18} />
         </button>
+
+        {/* Recolher/expandir (desktop): some por padrão, aparece só no hover da sidebar */}
         <button
           onClick={onToggleCollapse}
-          className="hidden lg:flex p-1 rounded hover:bg-white/10 text-zinc-400"
+          className={`
+            hidden lg:flex absolute top-1/2 -translate-y-1/2 p-1 rounded
+            bg-ink hover:bg-white/10 text-zinc-400
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
+            ${collapsed ? '-right-3 border border-white/10' : 'right-3'}
+          `}
           aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
         >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
@@ -265,11 +281,3 @@ function NavItem({
   );
 }
 
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="card empty-state">
-      <p className="text-text-primary font-medium mb-1">{title}</p>
-      <p className="text-sm">Esta área ainda está em construção.</p>
-    </div>
-  );
-}
