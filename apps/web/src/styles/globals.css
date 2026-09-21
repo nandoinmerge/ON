@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply bg-canvas text-text-primary antialiased;
+    @apply bg-background text-text-primary antialiased;
   }
 
   h1 {
@@ -34,30 +34,59 @@
   button {
     @apply transition-colors;
   }
+
+  /* Foco visível para navegação por teclado em qualquer elemento interativo */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2 ring-brand-600 ring-offset-2 ring-offset-canvas;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors;
+    @apply px-5 py-2.5 bg-brand-600 text-white rounded-lg font-medium text-sm shadow-soft hover:bg-brand-700 active:bg-brand-900 disabled:opacity-50 disabled:pointer-events-none transition-colors;
   }
 
   .btn-secondary {
-    @apply px-6 py-2 bg-surface border border-border-subtle text-text-primary rounded-lg font-medium hover:bg-brand-50 transition-colors;
+    @apply px-5 py-2.5 bg-white border border-border-subtle text-text-primary rounded-lg font-medium text-sm hover:bg-surface-muted hover:border-border-strong active:bg-background disabled:opacity-50 disabled:pointer-events-none transition-colors;
   }
 
   .btn-danger {
-    @apply px-6 py-2 bg-status-danger-bg text-status-danger-fg rounded-lg font-medium hover:opacity-80 transition-opacity;
+    @apply px-5 py-2.5 bg-status-danger-bg text-status-danger-fg rounded-lg font-medium text-sm hover:opacity-80 active:opacity-70 disabled:opacity-50 disabled:pointer-events-none transition-opacity;
   }
 
   .input-text {
-    @apply w-full px-4 py-2 border border-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent transition-all;
+    @apply w-full px-4 py-2.5 bg-white border border-border-subtle rounded-lg text-sm placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent disabled:bg-surface-muted disabled:text-text-tertiary transition-all;
   }
 
   .card {
-    @apply bg-white border border-border-subtle rounded-lg p-6 shadow-sm;
+    @apply bg-white border border-border-subtle rounded-2xl p-6 shadow-soft;
   }
 
   .card-hover {
-    @apply card hover:shadow-md hover:border-brand-200 transition-all;
+    @apply card hover:shadow-soft-lg hover:border-brand-200 transition-all cursor-pointer;
+  }
+
+  /* Badge de status: usar sempre com uma cor semântica (success/warning/danger/info) */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Estado vazio: usado quando uma lista, tabela ou painel não tem dados ainda */
+  .empty-state {
+    @apply flex flex-col items-center justify-center text-center py-12 px-6 text-text-secondary;
   }
 }

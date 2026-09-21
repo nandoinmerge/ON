@@ -11,8 +11,6 @@
  * (alternativas: SendGrid, AWS SES, ou um worker Docker com Nodemailer em produção).
  */
 
-import { z } from 'zod';
-
 const NotificationConfig = {
   provider: process.env.EMAIL_PROVIDER || 'resend',
   apiKey: process.env.EMAIL_API_KEY || '',

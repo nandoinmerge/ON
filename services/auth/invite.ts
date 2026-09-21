@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from './index.js';
+import { supabaseAdmin } from './index.js';
 import { z } from 'zod';
 
 /**
