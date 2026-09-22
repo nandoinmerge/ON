@@ -180,8 +180,191 @@ export function handleDbError(error: any): string {
 }
 
 /**
- * Clientes
+ * Clientes: criar, editar, arquivar
  */
+export async function createClient(input: {
+  organization_id: string;
+  name: string;
+  industry?: string;
+  status?: string;
+  health?: string;
+  contact_name?: string;
+  contact_email?: string;
+}) {
+  try {
+    const { data, error } = await supabase.from('clients').insert([input]).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateClient(id: string, updates: Record<string, any>) {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function archiveClient(id: string) {
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    return { data: { success: true }, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Projetos: criar, editar, arquivar
+ */
+export async function createProject(input: {
+  organization_id: string;
+  client_id: string;
+  name: string;
+  status?: string;
+  priority?: string;
+  due_date?: string | null;
+}) {
+  try {
+    const { data, error } = await supabase.from('projects').insert([input]).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateProject(id: string, updates: Record<string, any>) {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function archiveProject(id: string) {
+  try {
+    const { error } = await supabase
+      .from('projects')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    return { data: { success: true }, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Tarefas: criar, editar, excluir
+ */
+export async function createTask(input: {
+  organization_id: string;
+  project_id: string;
+  title: string;
+  status?: string;
+  assignee_profile_id?: string | null;
+  due_date?: string | null;
+}) {
+  try {
+    const { data, error } = await supabase.from('tasks').insert([input]).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateTask(id: string, updates: Record<string, any>) {
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function deleteTask(id: string) {
+  try {
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) throw error;
+    return { data: { success: true }, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Itens financeiros: criar, editar, excluir
+ */
+export async function createBillingItem(input: {
+  organization_id: string;
+  client_id?: string | null;
+  description: string;
+  amount: number;
+  status?: string;
+  due_date?: string | null;
+}) {
+  try {
+    const { data, error } = await supabase.from('billing_items').insert([input]).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateBillingItem(id: string, updates: Record<string, any>) {
+  try {
+    const { data, error } = await supabase
+      .from('billing_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function deleteBillingItem(id: string) {
+  try {
+    const { error } = await supabase.from('billing_items').delete().eq('id', id);
+    if (error) throw error;
+    return { data: { success: true }, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
 export async function getClients() {
   try {
     const { data, error } = await supabase

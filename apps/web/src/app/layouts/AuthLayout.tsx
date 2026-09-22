@@ -8,7 +8,6 @@ import {
   Wallet,
   LogOut,
   ChevronLeft,
-  ChevronRight,
   Menu,
   X,
 } from 'lucide-react';
@@ -174,12 +173,19 @@ function Sidebar({
 
       <div className="relative flex items-center justify-center h-16 border-b border-white/10 px-4">
         {collapsed ? (
-          <img
-            src="/logo-icon-white.png"
-            alt="ON Digital"
-            className="shrink-0 object-contain"
-            style={{ width: 36, height: 36 }}
-          />
+          <button
+            onClick={onToggleCollapse}
+            className="shrink-0 rounded-lg hover:bg-white/10 transition-colors p-1"
+            aria-label="Expandir menu"
+            title="Expandir menu"
+          >
+            <img
+              src="/logo-icon-white.png"
+              alt="ON Digital"
+              className="object-contain"
+              style={{ width: 32, height: 32 }}
+            />
+          </button>
         ) : (
           <img
             src="/logo-lockup-white.png"
@@ -198,19 +204,16 @@ function Sidebar({
           <X size={18} />
         </button>
 
-        {/* Recolher/expandir (desktop): some por padrão, aparece só no hover da sidebar */}
-        <button
-          onClick={onToggleCollapse}
-          className={`
-            hidden lg:flex absolute top-1/2 -translate-y-1/2 p-1 rounded
-            bg-ink hover:bg-white/10 text-zinc-400
-            opacity-0 group-hover:opacity-100 transition-opacity duration-150
-            ${collapsed ? '-right-3 border border-white/10' : 'right-3'}
-          `}
-          aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={16} />}
-        </button>
+        {/* Recolher (desktop): só existe quando expandida, some por padrão, aparece no hover */}
+        {!collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex absolute top-1/2 -translate-y-1/2 right-3 p-1 rounded bg-ink hover:bg-white/10 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            aria-label="Recolher menu"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
       </div>
 
       <nav className="relative flex-1 px-3 py-4 space-y-1 overflow-y-auto">
