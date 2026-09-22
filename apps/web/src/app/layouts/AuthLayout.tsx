@@ -15,6 +15,7 @@ import { getCurrentUser, logout } from '@services/auth/index.js';
 import { getCurrentUserProfile } from '@services/db/index.js';
 import DashboardPage from '../pages/DashboardPage';
 import ClientesPage from '../pages/ClientesPage';
+import ClienteDetailPage from '../pages/ClienteDetailPage';
 import ProjetosPage from '../pages/ProjetosPage';
 import TarefasPage from '../pages/TarefasPage';
 import FinanceiroPage from '../pages/FinanceiroPage';
@@ -112,6 +113,7 @@ export default function AuthLayout() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/clientes/:id" element={<ClienteDetailPage />} />
             <Route path="/projetos" element={<ProjetosPage />} />
             <Route path="/tarefas" element={<TarefasPage />} />
             <Route path="/financeiro" element={<FinanceiroPage />} />

@@ -180,6 +180,71 @@ export function handleDbError(error: any): string {
 }
 
 /**
+ * Cliente 360: um cliente específico e tudo relacionado a ele.
+ */
+export async function getClientById(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name, industry, status, health, contact_name, contact_email, created_at')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function getProjectsByClient(clientId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name, status, priority, due_date, created_at')
+      .eq('client_id', clientId)
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function getTasksByProjectIds(projectIds: string[]) {
+  if (projectIds.length === 0) return { data: [], error: null };
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('id, title, status, due_date, project_id, projects(id, name)')
+      .in('project_id', projectIds)
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function getBillingItemsByClient(clientId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('billing_items')
+      .select('id, description, amount, status, due_date, created_at')
+      .eq('client_id', clientId)
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
  * Clientes: criar, editar, arquivar
  */
 export async function createClient(input: {

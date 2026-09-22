@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Mail, User, Plus, Pencil, Archive } from 'lucide-react';
 import {
   getClients,
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
 };
 
 export default function ClientesPage() {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,11 @@ export default function ClientesPage() {
       {!error && clients.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {clients.map((client) => (
-            <div key={client.id} className="card group/card relative">
+            <div
+              key={client.id}
+              onClick={() => navigate(`/app/clientes/${client.id}`)}
+              className="card group/card relative cursor-pointer hover:shadow-soft-lg hover:border-brand-200 transition-all"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
                   <Building2 size={18} className="text-brand-600" />
@@ -197,7 +203,10 @@ export default function ClientesPage() {
                 </span>
                 <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                   <button
-                    onClick={() => openEditModal(client)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(client);
+                    }}
                     className="p-1.5 rounded-lg hover:bg-surface-muted text-text-secondary"
                     aria-label="Editar"
                     title="Editar"
@@ -205,7 +214,10 @@ export default function ClientesPage() {
                     <Pencil size={14} />
                   </button>
                   <button
-                    onClick={() => handleArchive(client.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleArchive(client.id);
+                    }}
                     className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
                     aria-label="Arquivar"
                     title="Arquivar"
