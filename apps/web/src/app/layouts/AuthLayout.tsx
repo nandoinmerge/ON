@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { getCurrentUser, logout } from '@services/auth/index.js';
+import { tryAcceptPendingInvitation } from '@services/auth/invite.js';
 import { getCurrentUserProfile } from '@services/db/index.js';
 import DashboardPage from '../pages/DashboardPage';
 import ClientesPage from '../pages/ClientesPage';
@@ -48,7 +49,21 @@ export default function AuthLayout() {
     }
 
     setUser(currentUser);
-    const profileResult = await getCurrentUserProfile();
+    let profileResult = await getCurrentUserProfile();
+
+    // Se acabou de confirmar o e-mail depois de aceitar um convite, ainda
+    // não tem profile. Termina o convite agora, automaticamente.
+    if (!profileResult.data) {
+      const pendingToken = localStorage.getItem('on_digital_pending_invite_token');
+      if (pendingToken) {
+        const acceptResult = await tryAcceptPendingInvitation(pendingToken);
+        if (acceptResult.success) {
+          localStorage.removeItem('on_digital_pending_invite_token');
+          profileResult = await getCurrentUserProfile();
+        }
+      }
+    }
+
     setProfile(profileResult.data);
     setLoading(false);
   }

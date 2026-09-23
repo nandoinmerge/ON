@@ -33,9 +33,7 @@ export default function LoginPage() {
         <div className="card">
           {/* Logo */}
           <div className="mb-8 text-center">
-            <Logo />
-            <h1 className="mt-4 text-h1">ON Digital</h1>
-            <p className="text-text-secondary text-sm mt-2">Sistema de Gestão</p>
+            <Logo height={48} />
           </div>
 
           {/* Formulário */}

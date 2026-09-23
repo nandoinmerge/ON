@@ -66,9 +66,8 @@ export default function SignupPage() {
         <div className="card">
           {/* Logo */}
           <div className="mb-8 text-center">
-            <Logo />
+            <Logo height={40} />
             <h1 className="mt-4 text-h1">Criar conta</h1>
-            <p className="text-text-secondary text-sm mt-2">ON Digital</p>
           </div>
 
           {/* Formulário */}
