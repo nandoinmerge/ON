@@ -77,3 +77,29 @@ export function formatDateBR(dateStr: string | null | undefined): string {
   const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('pt-BR');
 }
+
+export const LEAD_STAGE_LABELS: Record<string, string> = {
+  novo: 'Novo',
+  contato: 'Em contato',
+  proposta: 'Proposta',
+  ganho: 'Ganho',
+  perdido: 'Perdido',
+};
+
+export const LEAD_STAGE_ORDER = ['novo', 'contato', 'proposta', 'ganho', 'perdido'];
+
+export const LEAD_SOURCE_LABELS: Record<string, string> = {
+  meta_ads: 'Meta Ads',
+  google_ads: 'Google Ads',
+  manual: 'Manual',
+  webhook: 'Webhook',
+  other: 'Outro',
+};
+
+export const LEAD_SOURCE_CLASSES: Record<string, string> = {
+  meta_ads: 'bg-[#e7effe] text-[#1877f2]',
+  google_ads: 'bg-status-warning-bg text-status-warning-fg',
+  manual: 'bg-surface-muted text-text-secondary',
+  webhook: 'bg-brand-50 text-brand-600',
+  other: 'bg-surface-muted text-text-secondary',
+};

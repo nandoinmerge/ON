@@ -6,6 +6,7 @@ import {
   FolderKanban,
   CheckSquare,
   Wallet,
+  Target,
   LogOut,
   ChevronLeft,
   Menu,
@@ -18,6 +19,7 @@ import DashboardPage from '../pages/DashboardPage';
 import ClientesPage from '../pages/ClientesPage';
 import ClienteDetailPage from '../pages/ClienteDetailPage';
 import ProjetosPage from '../pages/ProjetosPage';
+import TrafegoPagoPage from '../pages/TrafegoPagoPage';
 import TarefasPage from '../pages/TarefasPage';
 import FinanceiroPage from '../pages/FinanceiroPage';
 
@@ -25,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { href: '/app/clientes', label: 'Clientes', icon: Users },
   { href: '/app/projetos', label: 'Projetos', icon: FolderKanban },
+  { href: '/app/trafego-pago', label: 'Tráfego Pago', icon: Target },
   { href: '/app/tarefas', label: 'Tarefas', icon: CheckSquare },
   { href: '/app/financeiro', label: 'Financeiro', icon: Wallet },
 ];
@@ -130,6 +133,7 @@ export default function AuthLayout() {
             <Route path="/clientes" element={<ClientesPage />} />
             <Route path="/clientes/:id" element={<ClienteDetailPage />} />
             <Route path="/projetos" element={<ProjetosPage />} />
+            <Route path="/trafego-pago" element={<TrafegoPagoPage />} />
             <Route path="/tarefas" element={<TarefasPage />} />
             <Route path="/financeiro" element={<FinanceiroPage />} />
           </Routes>

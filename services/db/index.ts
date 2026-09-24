@@ -496,3 +496,60 @@ export async function getBillingItems() {
     return { data: null, error: handleDbError(err) };
   }
 }
+
+/**
+ * Leads (funil de tráfego pago), com nome do cliente já resolvido.
+ */
+export async function getLeads() {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id, name, phone, email, source, stage, estimated_value, notes, created_at, client_id, clients(id, name)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function createLead(payload: {
+  organization_id: string;
+  client_id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  source?: string;
+  stage?: string;
+  estimated_value?: number | null;
+  notes?: string | null;
+}) {
+  try {
+    const { data, error } = await supabase.from('leads').insert(payload).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateLead(id: string, payload: Record<string, any>) {
+  try {
+    const { data, error } = await supabase.from('leads').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function deleteLead(id: string) {
+  try {
+    const { error } = await supabase.from('leads').delete().eq('id', id);
+    if (error) throw error;
+    return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
