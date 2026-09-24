@@ -11,11 +11,13 @@
 
 import { supabase } from '../auth/index.js';
 
-const BUCKET_PRIVATE = process.env.STORAGE_BUCKET_PRIVATE || 'agencia-arquivos-privados';
+const BUCKET_PRIVATE = import.meta.env.VITE_STORAGE_BUCKET_PRIVATE || 'agencia-arquivos-privados';
 const SIGNED_URL_EXPIRY = parseInt(
-  process.env.STORAGE_SIGNED_URL_EXPIRY_SECONDS || '3600'
+  import.meta.env.VITE_STORAGE_SIGNED_URL_EXPIRY_SECONDS || '3600'
 );
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
+export type StorageEntityType = 'deliverable' | 'contract' | 'briefing' | 'project' | 'task';
 
 export interface StorageResponse<T> {
   data: T | null;
@@ -40,7 +42,7 @@ export interface UploadedFile {
 export async function uploadFile(
   file: File,
   organizationId: string,
-  entityType: 'deliverable' | 'contract' | 'briefing',
+  entityType: StorageEntityType,
   entityId: string
 ): Promise<StorageResponse<UploadedFile>> {
   try {
@@ -172,7 +174,7 @@ export async function deleteFile(filePath: string): Promise<StorageResponse<null
  */
 export async function listFilesForEntity(
   organizationId: string,
-  entityType: 'deliverable' | 'contract' | 'briefing',
+  entityType: StorageEntityType,
   entityId: string
 ): Promise<StorageResponse<string[]>> {
   try {

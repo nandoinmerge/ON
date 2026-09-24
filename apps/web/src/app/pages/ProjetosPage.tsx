@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FolderKanban, Calendar, Plus, Pencil, Archive } from 'lucide-react';
+import { FolderKanban, Calendar, Plus, Pencil, Archive, CheckSquare } from 'lucide-react';
 import {
   getProjects,
   getClients,
@@ -7,6 +7,7 @@ import {
   createProject,
   updateProject,
   archiveProject,
+  getTasksByProjectIds,
 } from '@services/db/index.js';
 import {
   PROJECT_STATUS_LABELS,
@@ -16,6 +17,7 @@ import {
   formatDateBR,
 } from '../lib/labels';
 import Modal from '../components/Modal';
+import AttachmentsPanel from '../components/AttachmentsPanel';
 
 const EMPTY_FORM = {
   name: '',
@@ -29,6 +31,9 @@ export default function ProjetosPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [taskCounts, setTaskCounts] = useState<Record<string, { done: number; total: number }>>({});
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -52,6 +57,18 @@ export default function ProjetosPage() {
     if (projectsResult.data) setProjects(projectsResult.data);
     if (clientsResult.data) setClients(clientsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+
+    if (projectsResult.data && projectsResult.data.length > 0) {
+      const tasksResult = await getTasksByProjectIds(projectsResult.data.map((p: any) => p.id));
+      const counts: Record<string, { done: number; total: number }> = {};
+      (tasksResult.data || []).forEach((task: any) => {
+        if (!counts[task.project_id]) counts[task.project_id] = { done: 0, total: 0 };
+        counts[task.project_id].total += 1;
+        if (task.status === 'done') counts[task.project_id].done += 1;
+      });
+      setTaskCounts(counts);
+    }
+
     setLoading(false);
   }
 
@@ -136,6 +153,34 @@ export default function ProjetosPage() {
     load();
   }
 
+  function handleDragStart(e: React.DragEvent, projectId: string) {
+    e.dataTransfer.setData('text/plain', projectId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingId(projectId);
+  }
+
+  function handleDragEnd() {
+    setDraggingId(null);
+    setDragOverColumn(null);
+  }
+
+  function handleColumnDragOver(e: React.DragEvent, statusKey: string) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverColumn !== statusKey) setDragOverColumn(statusKey);
+  }
+
+  function handleColumnDrop(e: React.DragEvent, statusKey: string) {
+    e.preventDefault();
+    const projectId = e.dataTransfer.getData('text/plain');
+    setDragOverColumn(null);
+    setDraggingId(null);
+    const project = projects.find((p) => p.id === projectId);
+    if (project && project.status !== statusKey) {
+      handleStatusChange(projectId, statusKey);
+    }
+  }
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -183,8 +228,16 @@ export default function ProjetosPage() {
           {PROJECT_STATUS_ORDER.map((statusKey) => {
             const columnProjects = projects.filter((p) => p.status === statusKey);
             return (
-              <div key={statusKey} className="space-y-3">
-                <div className="flex items-center justify-between px-1">
+              <div
+                key={statusKey}
+                onDragOver={(e) => handleColumnDragOver(e, statusKey)}
+                onDragLeave={() => setDragOverColumn((c) => (c === statusKey ? null : c))}
+                onDrop={(e) => handleColumnDrop(e, statusKey)}
+                className={`space-y-3 rounded-2xl transition-colors ${
+                  dragOverColumn === statusKey ? 'bg-brand-50/60 ring-2 ring-brand-200' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between px-1 pt-1">
                   <h3 className="text-caption font-semibold text-text-secondary uppercase tracking-wide">
                     {PROJECT_STATUS_LABELS[statusKey]}
                   </h3>
@@ -193,70 +246,102 @@ export default function ProjetosPage() {
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  {columnProjects.map((project) => (
-                    <div key={project.id} className="card p-4 group/card">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h4 className="font-medium text-text-primary text-sm leading-snug">
-                          {project.name}
-                        </h4>
-                        <span
-                          className={`badge shrink-0 ${PRIORITY_CLASSES[project.priority] ?? 'bg-surface-muted text-text-secondary'}`}
-                        >
-                          {PRIORITY_LABELS[project.priority] ?? project.priority}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-text-secondary truncate mb-3">
-                        {project.clients?.name ?? 'Sem cliente'}
-                      </p>
-
-                      <div className="flex items-center justify-between">
-                        {project.due_date ? (
-                          <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
-                            <Calendar size={12} />
-                            {formatDateBR(project.due_date)}
-                          </div>
-                        ) : (
-                          <span />
-                        )}
-                        <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEditModal(project)}
-                            className="p-1 rounded hover:bg-surface-muted text-text-secondary"
-                            aria-label="Editar"
-                            title="Editar"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button
-                            onClick={() => handleArchive(project.id)}
-                            className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                            aria-label="Arquivar"
-                            title="Arquivar"
-                          >
-                            <Archive size={12} />
-                          </button>
-                        </div>
-                      </div>
-
-                      <select
-                        value={project.status}
-                        onChange={(e) => handleStatusChange(project.id, e.target.value)}
-                        className="mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
+                <div className="space-y-3 px-1 pb-1 min-h-[40px]">
+                  {columnProjects.map((project) => {
+                    const counts = taskCounts[project.id];
+                    return (
+                      <div
+                        key={project.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, project.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => openEditModal(project)}
+                        className={`card p-4 group/card cursor-grab active:cursor-grabbing hover:shadow-soft-lg transition-all ${
+                          draggingId === project.id ? 'opacity-40' : ''
+                        }`}
                       >
-                        {PROJECT_STATUS_ORDER.map((s) => (
-                          <option key={s} value={s}>
-                            Mover para: {PROJECT_STATUS_LABELS[s]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="font-medium text-text-primary text-sm leading-snug">
+                            {project.name}
+                          </h4>
+                          <span
+                            className={`badge shrink-0 ${PRIORITY_CLASSES[project.priority] ?? 'bg-surface-muted text-text-secondary'}`}
+                          >
+                            {PRIORITY_LABELS[project.priority] ?? project.priority}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-text-secondary truncate mb-3">
+                          {project.clients?.name ?? 'Sem cliente'}
+                        </p>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {project.due_date && (
+                              <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
+                                <Calendar size={12} />
+                                {formatDateBR(project.due_date)}
+                              </div>
+                            )}
+                            {counts && counts.total > 0 && (
+                              <div
+                                className={`flex items-center gap-1.5 text-xs ${
+                                  counts.done === counts.total ? 'text-status-success-fg' : 'text-text-tertiary'
+                                }`}
+                              >
+                                <CheckSquare size={12} />
+                                {counts.done}/{counts.total}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditModal(project);
+                              }}
+                              className="p-1 rounded hover:bg-surface-muted text-text-secondary"
+                              aria-label="Editar"
+                              title="Editar"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleArchive(project.id);
+                              }}
+                              className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                              aria-label="Arquivar"
+                              title="Arquivar"
+                            >
+                              <Archive size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <select
+                          value={project.status}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(project.id, e.target.value);
+                          }}
+                          className="sm:hidden mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
+                        >
+                          {PROJECT_STATUS_ORDER.map((s) => (
+                            <option key={s} value={s}>
+                              Mover para: {PROJECT_STATUS_LABELS[s]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })}
 
                   {columnProjects.length === 0 && (
                     <div className="border border-dashed border-border-subtle rounded-2xl p-4 text-center text-xs text-text-tertiary">
-                      Nenhum projeto
+                      Arraste um cartão para cá
                     </div>
                   )}
                 </div>
@@ -341,6 +426,12 @@ export default function ProjetosPage() {
               className="input-text"
             />
           </div>
+
+          {editingId && organizationId && (
+            <div className="pt-2 border-t border-border-subtle">
+              <AttachmentsPanel organizationId={organizationId} entityType="project" entityId={editingId} />
+            </div>
+          )}
 
           {formError && (
             <div className="p-3 bg-status-danger-bg text-status-danger-fg rounded-lg text-sm">
