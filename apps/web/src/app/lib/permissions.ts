@@ -15,6 +15,12 @@ export const ROLE_LABELS: Record<string, string> = {
 
 const CONTENT_ROLES = ['owner', 'admin', 'manager'];
 const FINANCE_ROLES = ['owner', 'admin', 'finance'];
+const TEAM_ROLES = ['owner', 'admin'];
+
+/** Pode convidar/remover membros e cancelar convites. */
+export function canManageTeam(role: string | null): boolean {
+  return !!role && TEAM_ROLES.includes(role);
+}
 
 /** Pode criar/editar/arquivar clientes, projetos e leads. */
 export function canManageContent(role: string | null): boolean {

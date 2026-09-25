@@ -8,6 +8,7 @@ import {
   Wallet,
   Target,
   CalendarDays,
+  UserPlus,
   LogOut,
   ChevronLeft,
   Menu,
@@ -22,6 +23,7 @@ import ClienteDetailPage from '../pages/ClienteDetailPage';
 import ProjetosPage from '../pages/ProjetosPage';
 import TrafegoPagoPage from '../pages/TrafegoPagoPage';
 import AgendaPage from '../pages/AgendaPage';
+import EquipePage from '../pages/EquipePage';
 import TarefasPage from '../pages/TarefasPage';
 import FinanceiroPage from '../pages/FinanceiroPage';
 
@@ -32,6 +34,7 @@ const NAV_ITEMS = [
   { href: '/app/trafego-pago', label: 'Tráfego Pago', icon: Target },
   { href: '/app/tarefas', label: 'Tarefas', icon: CheckSquare },
   { href: '/app/agenda', label: 'Agenda', icon: CalendarDays },
+  { href: '/app/equipe', label: 'Equipe', icon: UserPlus },
   { href: '/app/financeiro', label: 'Financeiro', icon: Wallet },
 ];
 
@@ -138,6 +141,7 @@ export default function AuthLayout() {
             <Route path="/projetos" element={<ProjetosPage />} />
             <Route path="/trafego-pago" element={<TrafegoPagoPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/equipe" element={<EquipePage />} />
             <Route path="/tarefas" element={<TarefasPage />} />
             <Route path="/financeiro" element={<FinanceiroPage />} />
           </Routes>

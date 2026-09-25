@@ -126,7 +126,7 @@ export async function getPendingInvitations(organizationId: string) {
   try {
     const { data, error } = await supabase
       .from('invitations')
-      .select('id, email, role, token_expires_at, status, created_at')
+      .select('id, email, role, token, token_expires_at, status, created_at')
       .eq('organization_id', organizationId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
