@@ -17,6 +17,7 @@ import {
   formatCurrencyBRL,
 } from '../lib/labels';
 import { canManageContent } from '../lib/permissions';
+import { getStoredAccessToken, createCalendarEvent } from '@services/calendar/index.js';
 import Modal from '../components/Modal';
 
 const EMPTY_FORM = {
@@ -162,7 +163,32 @@ export default function TrafegoPagoPage() {
     load();
   }
 
-  function openGoogleCalendar(lead: any) {
+  async function openGoogleCalendar(lead: any) {
+    const token = getStoredAccessToken();
+
+    if (token) {
+      const start = new Date();
+      start.setHours(start.getHours() + 1, 0, 0, 0);
+      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      const notesParts = [lead.phone && `Telefone: ${lead.phone}`, lead.notes && `Notas: ${lead.notes}`].filter(
+        Boolean
+      );
+      try {
+        const event = await createCalendarEvent(token, {
+          summary: `Reunião com ${lead.name}${lead.clients?.name ? ` (${lead.clients.name})` : ''}`,
+          description: notesParts.join('\n'),
+          startISO: start.toISOString(),
+          endISO: end.toISOString(),
+          attendeeEmail: lead.email || null,
+        });
+        if (event.hangoutLink) window.open(event.hangoutLink, '_blank');
+        alert('Reunião criada no Google Calendar, 1h a partir de agora. Ajuste o horário lá se precisar.');
+        return;
+      } catch (err: any) {
+        // se falhar (token expirado, etc.), cai no link simples abaixo
+      }
+    }
+
     const title = encodeURIComponent(`Reunião com ${lead.name}${lead.clients?.name ? ` (${lead.clients.name})` : ''}`);
     const detailsParts = [
       lead.phone && `Telefone: ${lead.phone}`,
