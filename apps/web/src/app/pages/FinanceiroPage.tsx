@@ -4,6 +4,7 @@ import {
   getBillingItems,
   getClients,
   getCurrentUserProfile,
+  getCurrentUserRole,
   createBillingItem,
   updateBillingItem,
   deleteBillingItem,
@@ -14,6 +15,7 @@ import {
   formatCurrencyBRL,
   formatDateBR,
 } from '../lib/labels';
+import { canManageFinance } from '../lib/permissions';
 import Modal from '../components/Modal';
 
 const EMPTY_FORM = {
@@ -30,6 +32,7 @@ export default function FinanceiroPage() {
   const [items, setItems] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -44,15 +47,17 @@ export default function FinanceiroPage() {
   }, []);
 
   async function load() {
-    const [itemsResult, clientsResult, profileResult] = await Promise.all([
+    const [itemsResult, clientsResult, profileResult, roleResult] = await Promise.all([
       getBillingItems(),
       getClients(),
       getCurrentUserProfile(),
+      getCurrentUserRole(),
     ]);
     if (itemsResult.error) setError(itemsResult.error);
     if (itemsResult.data) setItems(itemsResult.data);
     if (clientsResult.data) setClients(clientsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+    setRole(roleResult.data);
     setLoading(false);
   }
 
@@ -203,10 +208,12 @@ export default function FinanceiroPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-text-secondary text-sm">{items.length} item(ns)</p>
-        <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
-          <Plus size={16} />
-          Novo item
-        </button>
+        {canManageFinance(role) && (
+          <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} />
+            Novo item
+          </button>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -244,40 +251,48 @@ export default function FinanceiroPage() {
                     {formatCurrencyBRL(Number(item.amount))}
                   </td>
                   <td className="px-4 py-3">
-                    <select
-                      value={item.status}
-                      onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                      className={`badge border-0 cursor-pointer ${BILLING_STATUS_CLASSES[item.status] ?? ''}`}
-                    >
-                      {BILLING_STATUS_ORDER.map((s) => (
-                        <option key={s} value={s}>
-                          {BILLING_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
+                    {canManageFinance(role) ? (
+                      <select
+                        value={item.status}
+                        onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                        className={`badge border-0 cursor-pointer ${BILLING_STATUS_CLASSES[item.status] ?? ''}`}
+                      >
+                        {BILLING_STATUS_ORDER.map((s) => (
+                          <option key={s} value={s}>
+                            {BILLING_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`badge ${BILLING_STATUS_CLASSES[item.status] ?? ''}`}>
+                        {BILLING_STATUS_LABELS[item.status]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-text-tertiary hidden sm:table-cell">
                     {formatDateBR(item.due_date)}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="p-1.5 rounded-lg hover:bg-white text-text-secondary"
-                        aria-label="Editar"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                        aria-label="Excluir"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {canManageFinance(role) && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-1.5 rounded-lg hover:bg-white text-text-secondary"
+                          aria-label="Editar"
+                          title="Editar"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                          aria-label="Excluir"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

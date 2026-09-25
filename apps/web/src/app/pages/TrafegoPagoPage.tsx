@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Plus, Pencil, Trash2, Phone, Mail } from 'lucide-react';
+import { Target, Plus, Pencil, Trash2, Phone, Mail, CalendarPlus } from 'lucide-react';
 import {
   getLeads,
   getClients,
   getCurrentUserProfile,
+  getCurrentUserRole,
   createLead,
   updateLead,
   deleteLead,
@@ -15,6 +16,7 @@ import {
   LEAD_SOURCE_CLASSES,
   formatCurrencyBRL,
 } from '../lib/labels';
+import { canManageContent } from '../lib/permissions';
 import Modal from '../components/Modal';
 
 const EMPTY_FORM = {
@@ -32,6 +34,7 @@ export default function TrafegoPagoPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -49,15 +52,17 @@ export default function TrafegoPagoPage() {
   }, []);
 
   async function load() {
-    const [leadsResult, clientsResult, profileResult] = await Promise.all([
+    const [leadsResult, clientsResult, profileResult, roleResult] = await Promise.all([
       getLeads(),
       getClients(),
       getCurrentUserProfile(),
+      getCurrentUserRole(),
     ]);
     if (leadsResult.error) setError(leadsResult.error);
     if (leadsResult.data) setLeads(leadsResult.data);
     if (clientsResult.data) setClients(clientsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+    setRole(roleResult.data);
     setLoading(false);
   }
 
@@ -157,6 +162,18 @@ export default function TrafegoPagoPage() {
     load();
   }
 
+  function openGoogleCalendar(lead: any) {
+    const title = encodeURIComponent(`Reunião com ${lead.name}${lead.clients?.name ? ` (${lead.clients.name})` : ''}`);
+    const detailsParts = [
+      lead.phone && `Telefone: ${lead.phone}`,
+      lead.email && `E-mail: ${lead.email}`,
+      lead.notes && `Notas: ${lead.notes}`,
+    ].filter(Boolean);
+    const details = encodeURIComponent(detailsParts.join('\n'));
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`;
+    window.open(url, '_blank');
+  }
+
   async function handleStageChange(id: string, stage: string) {
     const result = await updateLead(id, { stage });
     if (result.error) {
@@ -217,10 +234,12 @@ export default function TrafegoPagoPage() {
             </option>
           ))}
         </select>
-        <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
-          <Plus size={16} />
-          Novo lead
-        </button>
+        {canManageContent(role) && (
+          <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} />
+            Novo lead
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -279,16 +298,18 @@ export default function TrafegoPagoPage() {
                 </div>
 
                 <div className="space-y-3 px-1 pb-1 min-h-[40px]">
-                  {columnLeads.map((lead) => (
+                  {columnLeads.map((lead) => {
+                    const canEdit = canManageContent(role);
+                    return (
                     <div
                       key={lead.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, lead.id)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => openEditModal(lead)}
-                      className={`card p-4 group/card cursor-grab active:cursor-grabbing hover:shadow-soft-lg transition-all ${
-                        draggingId === lead.id ? 'opacity-40' : ''
-                      }`}
+                      draggable={canEdit}
+                      onDragStart={canEdit ? (e) => handleDragStart(e, lead.id) : undefined}
+                      onDragEnd={canEdit ? handleDragEnd : undefined}
+                      onClick={canEdit ? () => openEditModal(lead) : undefined}
+                      className={`card p-4 group/card transition-all ${
+                        canEdit ? 'cursor-grab active:cursor-grabbing hover:shadow-soft-lg' : ''
+                      } ${draggingId === lead.id ? 'opacity-40' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h4 className="font-medium text-text-primary text-sm leading-snug">{lead.name}</h4>
@@ -326,47 +347,62 @@ export default function TrafegoPagoPage() {
                         ) : (
                           <span />
                         )}
-                        <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(lead);
-                            }}
-                            className="p-1 rounded hover:bg-surface-muted text-text-secondary"
-                            title="Editar"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(lead.id);
-                            }}
-                            className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                            title="Excluir"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                        {canEdit && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openGoogleCalendar(lead);
+                              }}
+                              className="p-1 rounded hover:bg-surface-muted text-text-secondary"
+                              title="Agendar reunião no Google Calendar"
+                            >
+                              <CalendarPlus size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditModal(lead);
+                              }}
+                              className="p-1 rounded hover:bg-surface-muted text-text-secondary"
+                              title="Editar"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(lead.id);
+                              }}
+                              className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                              title="Excluir"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <select
-                        value={lead.stage}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleStageChange(lead.id, e.target.value);
-                        }}
-                        className="sm:hidden mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      >
-                        {LEAD_STAGE_ORDER.map((s) => (
-                          <option key={s} value={s}>
-                            Mover para: {LEAD_STAGE_LABELS[s]}
-                          </option>
-                        ))}
-                      </select>
+                      {canEdit && (
+                        <select
+                          value={lead.stage}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleStageChange(lead.id, e.target.value);
+                          }}
+                          className="sm:hidden mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
+                        >
+                          {LEAD_STAGE_ORDER.map((s) => (
+                            <option key={s} value={s}>
+                              Mover para: {LEAD_STAGE_LABELS[s]}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
 
                   {columnLeads.length === 0 && (
                     <div className="border border-dashed border-border-subtle rounded-2xl p-4 text-center text-xs text-text-tertiary">

@@ -4,11 +4,13 @@ import {
   getProjects,
   getClients,
   getCurrentUserProfile,
+  getCurrentUserRole,
   createProject,
   updateProject,
   archiveProject,
   getTasksByProjectIds,
 } from '@services/db/index.js';
+import { canManageContent } from '../lib/permissions';
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_ORDER,
@@ -31,6 +33,7 @@ export default function ProjetosPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [taskCounts, setTaskCounts] = useState<Record<string, { done: number; total: number }>>({});
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -48,15 +51,17 @@ export default function ProjetosPage() {
   }, []);
 
   async function load() {
-    const [projectsResult, clientsResult, profileResult] = await Promise.all([
+    const [projectsResult, clientsResult, profileResult, roleResult] = await Promise.all([
       getProjects(),
       getClients(),
       getCurrentUserProfile(),
+      getCurrentUserRole(),
     ]);
     if (projectsResult.error) setError(projectsResult.error);
     if (projectsResult.data) setProjects(projectsResult.data);
     if (clientsResult.data) setClients(clientsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+    setRole(roleResult.data);
 
     if (projectsResult.data && projectsResult.data.length > 0) {
       const tasksResult = await getTasksByProjectIds(projectsResult.data.map((p: any) => p.id));
@@ -195,15 +200,17 @@ export default function ProjetosPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-text-secondary text-sm">{projects.length} projeto(s)</p>
-        <button
-          onClick={openCreateModal}
-          disabled={clients.length === 0}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-          title={clients.length === 0 ? 'Cadastre um cliente primeiro' : undefined}
-        >
-          <Plus size={16} />
-          Novo projeto
-        </button>
+        {canManageContent(role) && (
+          <button
+            onClick={openCreateModal}
+            disabled={clients.length === 0}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+            title={clients.length === 0 ? 'Cadastre um cliente primeiro' : undefined}
+          >
+            <Plus size={16} />
+            Novo projeto
+          </button>
+        )}
       </div>
 
       {error && (
@@ -249,16 +256,17 @@ export default function ProjetosPage() {
                 <div className="space-y-3 px-1 pb-1 min-h-[40px]">
                   {columnProjects.map((project) => {
                     const counts = taskCounts[project.id];
+                    const canEdit = canManageContent(role);
                     return (
                       <div
                         key={project.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, project.id)}
-                        onDragEnd={handleDragEnd}
-                        onClick={() => openEditModal(project)}
-                        className={`card p-4 group/card cursor-grab active:cursor-grabbing hover:shadow-soft-lg transition-all ${
-                          draggingId === project.id ? 'opacity-40' : ''
-                        }`}
+                        draggable={canEdit}
+                        onDragStart={canEdit ? (e) => handleDragStart(e, project.id) : undefined}
+                        onDragEnd={canEdit ? handleDragEnd : undefined}
+                        onClick={canEdit ? () => openEditModal(project) : undefined}
+                        className={`card p-4 group/card transition-all ${
+                          canEdit ? 'cursor-grab active:cursor-grabbing hover:shadow-soft-lg' : ''
+                        } ${draggingId === project.id ? 'opacity-40' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h4 className="font-medium text-text-primary text-sm leading-snug">
@@ -294,47 +302,51 @@ export default function ProjetosPage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditModal(project);
-                              }}
-                              className="p-1 rounded hover:bg-surface-muted text-text-secondary"
-                              aria-label="Editar"
-                              title="Editar"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleArchive(project.id);
-                              }}
-                              className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                              aria-label="Arquivar"
-                              title="Arquivar"
-                            >
-                              <Archive size={12} />
-                            </button>
-                          </div>
+                          {canEdit && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(project);
+                                }}
+                                className="p-1 rounded hover:bg-surface-muted text-text-secondary"
+                                aria-label="Editar"
+                                title="Editar"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchive(project.id);
+                                }}
+                                className="p-1 rounded hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                                aria-label="Arquivar"
+                                title="Arquivar"
+                              >
+                                <Archive size={12} />
+                              </button>
+                            </div>
+                          )}
                         </div>
 
-                        <select
-                          value={project.status}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleStatusChange(project.id, e.target.value);
-                          }}
-                          className="sm:hidden mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
-                        >
-                          {PROJECT_STATUS_ORDER.map((s) => (
-                            <option key={s} value={s}>
-                              Mover para: {PROJECT_STATUS_LABELS[s]}
-                            </option>
-                          ))}
-                        </select>
+                        {canEdit && (
+                          <select
+                            value={project.status}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(project.id, e.target.value);
+                            }}
+                            className="sm:hidden mt-3 w-full text-xs border border-border-subtle rounded-lg px-2 py-1.5 bg-surface-muted text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          >
+                            {PROJECT_STATUS_ORDER.map((s) => (
+                              <option key={s} value={s}>
+                                Mover para: {PROJECT_STATUS_LABELS[s]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     );
                   })}

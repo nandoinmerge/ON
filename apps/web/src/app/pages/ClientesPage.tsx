@@ -4,10 +4,12 @@ import { Building2, Mail, User, Plus, Pencil, Archive } from 'lucide-react';
 import {
   getClients,
   getCurrentUserProfile,
+  getCurrentUserRole,
   createClient,
   updateClient,
   archiveClient,
 } from '@services/db/index.js';
+import { canManageContent } from '../lib/permissions';
 import {
   CLIENT_STATUS_LABELS,
   CLIENT_HEALTH_LABELS,
@@ -28,6 +30,7 @@ export default function ClientesPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -42,10 +45,15 @@ export default function ClientesPage() {
   }, []);
 
   async function load() {
-    const [clientsResult, profileResult] = await Promise.all([getClients(), getCurrentUserProfile()]);
+    const [clientsResult, profileResult, roleResult] = await Promise.all([
+      getClients(),
+      getCurrentUserProfile(),
+      getCurrentUserRole(),
+    ]);
     if (clientsResult.error) setError(clientsResult.error);
     if (clientsResult.data) setClients(clientsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+    setRole(roleResult.data);
     setLoading(false);
   }
 
@@ -133,10 +141,12 @@ export default function ClientesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-text-secondary text-sm">{clients.length} cliente(s)</p>
-        <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
-          <Plus size={16} />
-          Novo cliente
-        </button>
+        {canManageContent(role) && (
+          <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} />
+            Novo cliente
+          </button>
+        )}
       </div>
 
       {error && (
@@ -202,28 +212,32 @@ export default function ClientesPage() {
                   {CLIENT_STATUS_LABELS[client.status] ?? client.status}
                 </span>
                 <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditModal(client);
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-surface-muted text-text-secondary"
-                    aria-label="Editar"
-                    title="Editar"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleArchive(client.id);
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                    aria-label="Arquivar"
-                    title="Arquivar"
-                  >
-                    <Archive size={14} />
-                  </button>
+                  {canManageContent(role) && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(client);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-surface-muted text-text-secondary"
+                        aria-label="Editar"
+                        title="Editar"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleArchive(client.id);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                        aria-label="Arquivar"
+                        title="Arquivar"
+                      >
+                        <Archive size={14} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

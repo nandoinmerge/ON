@@ -470,7 +470,7 @@ export async function getTasks() {
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, title, status, due_date, created_at, project_id, projects(id, name)')
+      .select('id, title, status, due_date, created_at, project_id, assignee_profile_id, projects(id, name)')
       .order('due_date', { ascending: true, nullsFirst: false });
 
     if (error) throw error;
@@ -549,6 +549,31 @@ export async function deleteLead(id: string) {
     const { error } = await supabase.from('leads').delete().eq('id', id);
     if (error) throw error;
     return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+/**
+ * Papel do usuário logado na organização atual (para controlar o que a
+ * interface mostra/permite, além do que a RLS já impõe no banco).
+ */
+export async function getCurrentUserRole() {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: null };
+
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active')
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return { data: data?.role ?? null, error: null };
   } catch (err) {
     return { data: null, error: handleDbError(err) };
   }

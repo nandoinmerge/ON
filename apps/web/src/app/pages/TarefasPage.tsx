@@ -4,11 +4,14 @@ import {
   getTasks,
   getProjects,
   getCurrentUserProfile,
+  getCurrentUserRole,
   createTask,
   updateTask,
   deleteTask,
 } from '@services/db/index.js';
+import { getCurrentUser } from '@services/auth/index.js';
 import { TASK_STATUS_LABELS, TASK_STATUS_CLASSES, formatDateBR } from '../lib/labels';
+import { canManageContent, canEditTask } from '../lib/permissions';
 import Modal from '../components/Modal';
 
 const EMPTY_FORM = {
@@ -24,6 +27,8 @@ export default function TarefasPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -38,15 +43,19 @@ export default function TarefasPage() {
   }, []);
 
   async function load() {
-    const [tasksResult, projectsResult, profileResult] = await Promise.all([
+    const [tasksResult, projectsResult, profileResult, roleResult, user] = await Promise.all([
       getTasks(),
       getProjects(),
       getCurrentUserProfile(),
+      getCurrentUserRole(),
+      getCurrentUser(),
     ]);
     if (tasksResult.error) setError(tasksResult.error);
     if (tasksResult.data) setTasks(tasksResult.data);
     if (projectsResult.data) setProjects(projectsResult.data);
     if (profileResult.data?.organization_id) setOrganizationId(profileResult.data.organization_id);
+    setRole(roleResult.data);
+    setUserId(user?.id ?? null);
     setLoading(false);
   }
 
@@ -144,15 +153,17 @@ export default function TarefasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-text-secondary text-sm">{tasks.length} tarefa(s)</p>
-        <button
-          onClick={openCreateModal}
-          disabled={projects.length === 0}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-          title={projects.length === 0 ? 'Cadastre um projeto primeiro' : undefined}
-        >
-          <Plus size={16} />
-          Nova tarefa
-        </button>
+        {canManageContent(role) && (
+          <button
+            onClick={openCreateModal}
+            disabled={projects.length === 0}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+            title={projects.length === 0 ? 'Cadastre um projeto primeiro' : undefined}
+          >
+            <Plus size={16} />
+            Nova tarefa
+          </button>
+        )}
       </div>
 
       {error && (
@@ -185,7 +196,9 @@ export default function TarefasPage() {
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task) => (
+              {tasks.map((task) => {
+                const editable = canEditTask(role, task, userId);
+                return (
                 <tr
                   key={task.id}
                   className="border-b border-border-subtle last:border-0 hover:bg-surface-muted transition-colors group/row"
@@ -195,17 +208,23 @@ export default function TarefasPage() {
                     {task.projects?.name ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <select
-                      value={task.status}
-                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                      className={`badge border-0 cursor-pointer ${TASK_STATUS_CLASSES[task.status] ?? ''}`}
-                    >
-                      {TASK_STATUS_ORDER.map((s) => (
-                        <option key={s} value={s}>
-                          {TASK_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
+                    {editable ? (
+                      <select
+                        value={task.status}
+                        onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                        className={`badge border-0 cursor-pointer ${TASK_STATUS_CLASSES[task.status] ?? ''}`}
+                      >
+                        {TASK_STATUS_ORDER.map((s) => (
+                          <option key={s} value={s}>
+                            {TASK_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`badge ${TASK_STATUS_CLASSES[task.status] ?? ''}`}>
+                        {TASK_STATUS_LABELS[task.status]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-text-tertiary hidden sm:table-cell">
                     <div className="flex items-center gap-1.5">
@@ -214,27 +233,32 @@ export default function TarefasPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEditModal(task)}
-                        className="p-1.5 rounded-lg hover:bg-white text-text-secondary"
-                        aria-label="Editar"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(task.id)}
-                        className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
-                        aria-label="Excluir"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {editable && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(task)}
+                          className="p-1.5 rounded-lg hover:bg-white text-text-secondary"
+                          aria-label="Editar"
+                          title="Editar"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        {canManageContent(role) && (
+                          <button
+                            onClick={() => handleDelete(task.id)}
+                            className="p-1.5 rounded-lg hover:bg-status-danger-bg hover:text-status-danger-fg text-text-secondary"
+                            aria-label="Excluir"
+                            title="Excluir"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

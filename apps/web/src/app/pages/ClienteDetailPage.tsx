@@ -16,6 +16,7 @@ import {
   getTasksByProjectIds,
   getBillingItemsByClient,
   updateClient,
+  getCurrentUserRole,
 } from '@services/db/index.js';
 import {
   CLIENT_STATUS_LABELS,
@@ -29,6 +30,7 @@ import {
   formatCurrencyBRL,
   formatDateBR,
 } from '../lib/labels';
+import { canManageContent } from '../lib/permissions';
 import Modal from '../components/Modal';
 
 export default function ClienteDetailPage() {
@@ -39,6 +41,7 @@ export default function ClienteDetailPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [billingItems, setBillingItems] = useState<any[]>([]);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -60,7 +63,8 @@ export default function ClienteDetailPage() {
 
   async function load(clientId: string) {
     setLoading(true);
-    const clientResult = await getClientById(clientId);
+    const [clientResult, roleResult] = await Promise.all([getClientById(clientId), getCurrentUserRole()]);
+    setRole(roleResult.data);
     if (clientResult.error || !clientResult.data) {
       setError(clientResult.error || 'Cliente não encontrado');
       setLoading(false);
@@ -168,10 +172,12 @@ export default function ClienteDetailPage() {
               </div>
             </div>
           </div>
-          <button onClick={openEditModal} className="btn-secondary inline-flex items-center gap-2 shrink-0">
-            <Pencil size={14} />
-            Editar
-          </button>
+          {canManageContent(role) && (
+            <button onClick={openEditModal} className="btn-secondary inline-flex items-center gap-2 shrink-0">
+              <Pencil size={14} />
+              Editar
+            </button>
+          )}
         </div>
 
         {(client.contact_name || client.contact_email) && (
