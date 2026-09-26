@@ -204,7 +204,11 @@ function Sidebar({
         aria-hidden="true"
       />
 
-      <div className="relative flex items-center justify-center h-16 border-b border-white/10 px-4">
+      <div
+        className={`relative flex items-center h-16 border-b border-white/10 ${
+          collapsed ? 'justify-center px-4' : 'justify-start pl-6 pr-4'
+        }`}
+      >
         {collapsed ? (
           <button
             onClick={onToggleCollapse}
@@ -262,8 +266,9 @@ function Sidebar({
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{profile?.full_name || 'Usuário'}</p>
-              <p className="text-xs text-zinc-400 truncate">{profile?.email || user?.email}</p>
+              <p className="text-sm font-medium truncate">
+                {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+              </p>
             </div>
           )}
         </div>
