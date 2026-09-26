@@ -17,7 +17,7 @@ const SIGNED_URL_EXPIRY = parseInt(
 );
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
-export type StorageEntityType = 'deliverable' | 'contract' | 'briefing' | 'project' | 'task';
+export type StorageEntityType = 'deliverable' | 'contract' | 'briefing' | 'project' | 'task' | 'post';
 
 export interface StorageResponse<T> {
   data: T | null;

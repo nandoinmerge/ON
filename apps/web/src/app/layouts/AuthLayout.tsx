@@ -9,6 +9,7 @@ import {
   Target,
   CalendarDays,
   UserPlus,
+  Image,
   LogOut,
   ChevronLeft,
   Menu,
@@ -22,6 +23,7 @@ import ClientesPage from '../pages/ClientesPage';
 import ClienteDetailPage from '../pages/ClienteDetailPage';
 import ProjetosPage from '../pages/ProjetosPage';
 import TrafegoPagoPage from '../pages/TrafegoPagoPage';
+import ConteudoPage from '../pages/ConteudoPage';
 import AgendaPage from '../pages/AgendaPage';
 import EquipePage from '../pages/EquipePage';
 import TarefasPage from '../pages/TarefasPage';
@@ -32,6 +34,7 @@ const NAV_ITEMS = [
   { href: '/app/clientes', label: 'Clientes', icon: Users },
   { href: '/app/projetos', label: 'Projetos', icon: FolderKanban },
   { href: '/app/trafego-pago', label: 'Tráfego Pago', icon: Target },
+  { href: '/app/conteudo', label: 'Conteúdo', icon: Image },
   { href: '/app/tarefas', label: 'Tarefas', icon: CheckSquare },
   { href: '/app/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/app/equipe', label: 'Equipe', icon: UserPlus },
@@ -140,6 +143,7 @@ export default function AuthLayout() {
             <Route path="/clientes/:id" element={<ClienteDetailPage />} />
             <Route path="/projetos" element={<ProjetosPage />} />
             <Route path="/trafego-pago" element={<TrafegoPagoPage />} />
+            <Route path="/conteudo" element={<ConteudoPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/equipe" element={<EquipePage />} />
             <Route path="/tarefas" element={<TarefasPage />} />

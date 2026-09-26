@@ -578,3 +578,60 @@ export async function getCurrentUserRole() {
     return { data: null, error: handleDbError(err) };
   }
 }
+
+/**
+ * Posts de redes sociais (calendário de conteúdo), com nome do cliente
+ * já resolvido.
+ */
+export async function getSocialPosts() {
+  try {
+    const { data, error } = await supabase
+      .from('social_posts')
+      .select('id, title, caption, platform, scheduled_date, status, notes, client_id, clients(id, name)')
+      .order('scheduled_date', { ascending: true });
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function createSocialPost(payload: {
+  organization_id: string;
+  client_id: string;
+  title: string;
+  caption?: string | null;
+  platform?: string;
+  scheduled_date: string;
+  status?: string;
+  notes?: string | null;
+}) {
+  try {
+    const { data, error } = await supabase.from('social_posts').insert(payload).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function updateSocialPost(id: string, payload: Record<string, any>) {
+  try {
+    const { data, error } = await supabase.from('social_posts').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}
+
+export async function deleteSocialPost(id: string) {
+  try {
+    const { error } = await supabase.from('social_posts').delete().eq('id', id);
+    if (error) throw error;
+    return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: handleDbError(err) };
+  }
+}

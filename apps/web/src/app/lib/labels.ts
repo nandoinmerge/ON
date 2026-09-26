@@ -103,3 +103,29 @@ export const LEAD_SOURCE_CLASSES: Record<string, string> = {
   webhook: 'bg-brand-50 text-brand-600',
   other: 'bg-surface-muted text-text-secondary',
 };
+
+export const POST_STATUS_LABELS: Record<string, string> = {
+  draft: 'Rascunho',
+  pending_approval: 'Aguardando aprovação',
+  approved: 'Aprovado',
+  scheduled: 'Agendado',
+  published: 'Publicado',
+};
+
+export const POST_STATUS_ORDER = ['draft', 'pending_approval', 'approved', 'scheduled', 'published'];
+
+export const POST_STATUS_CLASSES: Record<string, string> = {
+  draft: 'bg-surface-muted text-text-secondary',
+  pending_approval: 'bg-status-warning-bg text-status-warning-fg',
+  approved: 'bg-[#e7effe] text-[#1877f2]',
+  scheduled: 'bg-brand-50 text-brand-600',
+  published: 'bg-status-success-bg text-status-success-fg',
+};
+
+export const PLATFORM_LABELS: Record<string, string> = {
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  other: 'Outra',
+};
