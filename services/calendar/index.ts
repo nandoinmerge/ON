@@ -17,7 +17,7 @@ declare global {
 const CALENDAR_SCOPES =
   'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
 
-const SESSION_KEY = 'on_digital_google_calendar_token';
+const SESSION_KEY = 'on_digital_google_calendar_token_v2';
 
 let gsiScriptPromise: Promise<void> | null = null;
 
@@ -38,17 +38,40 @@ function loadGoogleIdentityScript(): Promise<void> {
   return gsiScriptPromise;
 }
 
+/**
+ * O token fica no localStorage (sobrevive a fechar a aba/navegador), com a
+ * validade registrada. Continua sendo só o access token — nada de senha ou
+ * refresh token é salvo; quando expira (Google dá ~1h), a pessoa clica em
+ * conectar de novo, com um clique só (o Google já lembra da autorização).
+ */
 export function getStoredAccessToken(): string | null {
-  return sessionStorage.getItem(SESSION_KEY);
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
+  try {
+    const { token, expiresAt } = JSON.parse(raw);
+    if (!token || !expiresAt || Date.now() >= expiresAt) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return token;
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  }
 }
 
 export function clearAccessToken(): void {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function storeAccessToken(token: string, expiresInSeconds: number) {
+  const expiresAt = Date.now() + Math.max(expiresInSeconds - 60, 60) * 1000; // margem de 1 min
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt }));
 }
 
 /**
- * Abre o popup de autorização do Google e devolve um access token válido
- * por ~1 hora, guardado na sessão do navegador (some ao fechar a aba).
+ * Abre o popup de autorização do Google e devolve um access token, guardado
+ * no localStorage com validade controlada (veja getStoredAccessToken).
  */
 export function requestCalendarAccessToken(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -68,7 +91,7 @@ export function requestCalendarAccessToken(): Promise<string> {
               reject(new Error('Autorização recusada ou cancelada.'));
               return;
             }
-            sessionStorage.setItem(SESSION_KEY, response.access_token);
+            storeAccessToken(response.access_token, Number(response.expires_in) || 3600);
             resolve(response.access_token);
           },
         });
@@ -76,6 +99,26 @@ export function requestCalendarAccessToken(): Promise<string> {
       })
       .catch(reject);
   });
+}
+
+export async function listEventsInRange(accessToken: string, timeMinISO: string, timeMaxISO: string) {
+  const params = new URLSearchParams({
+    timeMin: timeMinISO,
+    timeMax: timeMaxISO,
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    maxResults: '250',
+  });
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 401) {
+    clearAccessToken();
+    throw new Error('Sessão do Google expirou, conecte de novo.');
+  }
+  if (!res.ok) throw new Error('Falha ao buscar eventos do Google Calendar.');
+  const data = await res.json();
+  return data.items || [];
 }
 
 export async function listUpcomingEvents(accessToken: string, maxResults = 15) {
