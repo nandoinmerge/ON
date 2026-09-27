@@ -297,3 +297,19 @@ export async function getSession() {
     return null;
   }
 }
+
+/**
+ * Reenviar o e-mail de confirmação de cadastro (rede de segurança para
+ * quando o primeiro e-mail se perde, atrasa ou vai pro spam).
+ */
+export async function resendConfirmationEmail(email: string): Promise<AuthResponse> {
+  try {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: null };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Não foi possível reenviar o e-mail' };
+  }
+}

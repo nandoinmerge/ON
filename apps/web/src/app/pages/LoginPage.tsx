@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '@services/auth/index.js';
+import { login, resendConfirmationEmail } from '@services/auth/index.js';
 import Logo from '../components/Logo';
 
 export default function LoginPage() {
@@ -9,6 +9,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,11 +23,28 @@ export default function LoginPage() {
     if (!result.success) {
       setError(result.error || 'Erro ao fazer login');
       setLoading(false);
+      if (result.error?.toLowerCase().includes('email not confirmed')) {
+        setShowResend(true);
+      }
       return;
     }
 
     // Sucesso: redirecionar para o app
     navigate('/app');
+  }
+
+  async function handleResend() {
+    setResendMessage('');
+    if (!email) {
+      setResendMessage('Digite seu e-mail no campo acima primeiro');
+      return;
+    }
+    setResending(true);
+    const result = await resendConfirmationEmail(email);
+    setResending(false);
+    setResendMessage(
+      result.success ? 'E-mail reenviado! Confira sua caixa de entrada (e o spam).' : result.error || 'Erro ao reenviar'
+    );
   }
 
   return (
@@ -68,6 +88,21 @@ export default function LoginPage() {
             {error && (
               <div className="p-3 bg-status-danger-bg text-status-danger-fg rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+
+            {showResend && (
+              <div className="p-3 bg-status-warning-bg text-status-warning-fg rounded-lg text-sm space-y-2">
+                <p>Sua conta ainda não confirmou o e-mail.</p>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="font-medium underline disabled:opacity-50"
+                >
+                  {resending ? 'Reenviando...' : 'Reenviar e-mail de confirmação'}
+                </button>
+                {resendMessage && <p className="text-xs">{resendMessage}</p>}
               </div>
             )}
 
