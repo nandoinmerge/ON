@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { getCurrentUser, logout } from '@services/auth/index.js';
 import { tryAcceptPendingInvitation } from '@services/auth/invite.js';
+import { getSignedUrl } from '@services/storage/index.js';
 import { getCurrentUserProfile } from '@services/db/index.js';
 import DashboardPage from '../pages/DashboardPage';
 import ClientesPage from '../pages/ClientesPage';
@@ -26,6 +27,7 @@ import TrafegoPagoPage from '../pages/TrafegoPagoPage';
 import ConteudoPage from '../pages/ConteudoPage';
 import AgendaPage from '../pages/AgendaPage';
 import EquipePage from '../pages/EquipePage';
+import PerfilPage from '../pages/PerfilPage';
 import TarefasPage from '../pages/TarefasPage';
 import FinanceiroPage from '../pages/FinanceiroPage';
 
@@ -45,6 +47,7 @@ export default function AuthLayout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,6 +80,10 @@ export default function AuthLayout() {
     }
 
     setProfile(profileResult.data);
+    if (profileResult.data?.avatar_url) {
+      const signed = await getSignedUrl(profileResult.data.avatar_url);
+      setAvatarUrl(signed.data);
+    }
     setLoading(false);
   }
 
@@ -116,6 +123,7 @@ export default function AuthLayout() {
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
         profile={profile}
+        avatarUrl={avatarUrl}
         user={user}
         initials={initials}
         onLogout={handleLogout}
@@ -146,6 +154,7 @@ export default function AuthLayout() {
             <Route path="/conteudo" element={<ConteudoPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/equipe" element={<EquipePage />} />
+            <Route path="/perfil" element={<PerfilPage />} />
             <Route path="/tarefas" element={<TarefasPage />} />
             <Route path="/financeiro" element={<FinanceiroPage />} />
           </Routes>
@@ -157,6 +166,9 @@ export default function AuthLayout() {
 
 function PageTitle() {
   const location = useLocation();
+  if (location.pathname.startsWith('/app/perfil')) {
+    return <h1 className="text-h2 text-text-primary">Meu perfil</h1>;
+  }
   const found = NAV_ITEMS.find((item) =>
     item.end ? location.pathname === item.href : location.pathname.startsWith(item.href)
   );
@@ -169,6 +181,7 @@ function Sidebar({
   mobileOpen,
   onCloseMobile,
   profile,
+  avatarUrl,
   user,
   initials,
   onLogout,
@@ -178,6 +191,7 @@ function Sidebar({
   mobileOpen: boolean;
   onCloseMobile: () => void;
   profile: any;
+  avatarUrl: string | null;
   user: any;
   initials: string;
   onLogout: () => void;
@@ -260,9 +274,19 @@ function Sidebar({
       </nav>
 
       <div className="relative px-3 py-4 border-t border-white/10">
-        <div className={`flex items-center gap-3 mb-3 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 rounded-full bg-brand-400/30 border border-brand-400/40 flex items-center justify-center text-xs font-semibold shrink-0">
-            {initials}
+        <Link
+          to="/app/perfil"
+          title="Meu perfil"
+          className={`flex items-center gap-3 mb-3 rounded-lg hover:bg-white/5 transition-colors p-1 -m-1 ${
+            collapsed ? 'justify-center' : ''
+          }`}
+        >
+          <div className="w-8 h-8 rounded-full bg-brand-400/30 border border-brand-400/40 flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0">
@@ -271,7 +295,7 @@ function Sidebar({
               </p>
             </div>
           )}
-        </div>
+        </Link>
         <button
           onClick={onLogout}
           className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 hover:text-white rounded-lg transition-colors ${

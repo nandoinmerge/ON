@@ -74,7 +74,7 @@ export async function getCurrentUserProfile() {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, organization_id, full_name, email, role_default, created_at')
+      .select('id, organization_id, full_name, email, role_default, avatar_url, created_at')
       .single();
 
     if (error && error.code !== 'PGRST116') throw error; // 116 = no rows
@@ -97,11 +97,18 @@ export async function getCurrentUserProfile() {
 export async function updateUserProfile(updates: {
   full_name?: string;
   email?: string;
+  avatar_url?: string | null;
 }) {
   try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
+      .eq('id', user.id)
       .select()
       .single();
 
