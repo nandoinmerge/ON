@@ -18,6 +18,7 @@ import {
 import { getCurrentUser, logout } from '@services/auth/index.js';
 import { tryAcceptPendingInvitation } from '@services/auth/invite.js';
 import { getSignedUrl } from '@services/storage/index.js';
+import Logo from '../components/Logo';
 import { getCurrentUserProfile } from '@services/db/index.js';
 import DashboardPage from '../pages/DashboardPage';
 import ClientesPage from '../pages/ClientesPage';
@@ -96,6 +97,32 @@ export default function AuthLayout() {
     return (
       <div className="flex items-center justify-center h-screen bg-background text-text-secondary">
         Carregando...
+      </div>
+    );
+  }
+
+  // Conta criada, mas sem vínculo com nenhuma agência (ex: cadastro direto
+  // sem convite). Em vez de mostrar um painel vazio, explica o que fazer.
+  if (!profile?.organization_id) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="card max-w-md w-full text-center space-y-4">
+          <Logo height={40} />
+          <h1 className="text-h2 text-text-primary">Você ainda não faz parte de uma agência</h1>
+          <p className="text-sm text-text-secondary">
+            Sua conta ({user?.email}) foi criada, mas ainda não está vinculada a nenhuma equipe. Peça a quem
+            administra a agência para te enviar um convite e abra o link recebido. Depois disso, você entra
+            automaticamente.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => window.location.reload()} className="btn-secondary flex-1">
+              Já aceitei, atualizar
+            </button>
+            <button onClick={handleLogout} className="btn-primary flex-1">
+              Sair
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
